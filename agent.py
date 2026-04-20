@@ -26,7 +26,7 @@ class MemoriaBatalha:
 class Agent:
     def __init__(
         self,
-        epsilon: float = 1.0,
+        epsilon: float = 0.25,
         decaimento_eps: float = 0.995,
         taxa_aprendizado: float = 0.1,
     ) -> None:
@@ -35,14 +35,31 @@ class Agent:
         self.taxa_aprendizado = taxa_aprendizado
 
         # Separamos os ficheiros!
-        self.arquivo_q_esp = "tabela_q.json"  # O seu ficheiro antigo continua aqui
-        self.arquivo_q_geral = "tabela_q_tipos.json"  # O novo ficheiro de instintos
+        self.arquivo_q_esp = "tabela_q.json"
+        self.arquivo_q_geral = "tabela_q_tipos.json"
+        self.arquivo_config = "agent_config.json"
 
         self.memoria = MemoriaBatalha()
 
         self.tabela_especifica = {}
         self.tabela_geral = {}
         self.carregar_q()
+        self.epsilon = self._carregar_epsilon(epsilon)
+
+    def _carregar_epsilon(self, padrao: float) -> float:
+        """Lê o epsilon salvo em agent_config.json, ou usa o valor padrão se não existir."""
+        if os.path.exists(self.arquivo_config):
+            with open(self.arquivo_config, "r") as f:
+                config = json.load(f)
+            epsilon = config.get("epsilon", padrao)
+            print(f"⚙️ Epsilon carregado: {epsilon:.4f}")
+            return epsilon
+        return padrao
+
+    def _salvar_epsilon(self) -> None:
+        """Persiste o epsilon atual em agent_config.json."""
+        with open(self.arquivo_config, "w") as f:
+            json.dump({"epsilon": self.epsilon}, f, indent=4)
 
     def carregar_q(self):
         """Carrega as duas memórias de ficheiros separados."""
@@ -98,6 +115,7 @@ class Agent:
             )
 
         self.epsilon = max(0.1, self.epsilon * self.decaimento_eps)
+        self._salvar_epsilon()
         return escolha
 
     def registrar_acao(self, est_especifico: str, est_geral: str, move_id: int) -> None:

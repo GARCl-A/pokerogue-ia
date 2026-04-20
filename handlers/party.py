@@ -12,7 +12,9 @@ def handle_party(dados: dict, agent) -> dict:
     mensagem = dados.get("mensagem", "").lower()
 
     # Contextos de uso de item ou ensino de golpe
-    is_usando_item = any(t in mensagem for t in ["escolha", "ensina"])
+    is_usando_item = any(
+        t in mensagem for t in ["escolha", "ensina", "aumenta", "reanima", "restaura"]
+    )
 
     if not time:
         return acao(Tecla.X.value)

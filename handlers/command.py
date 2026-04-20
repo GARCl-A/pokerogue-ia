@@ -24,6 +24,8 @@ def handle_command(dados: dict, agent: Agent) -> dict:
     meu_time = dados.get("meuTime", [])
     inimigos = dados.get("inimigos", [])
 
+    # No handlers/command.py, dentro de handle_command:
+
     if meu_time and inimigos:
         meu_poke = meu_time[0]
         inimigo = inimigos[0]
@@ -51,18 +53,24 @@ def handle_command(dados: dict, agent: Agent) -> dict:
         agent.memoria.estado_geral_atual = estado_geral
 
         if agent.memoria.acao_anterior is not None:
-            dano_causado = max(
-                0, (agent.memoria.inimigo_hp_anterior or 0) - hp_atual_inimigo
-            )
-            dano_sofrido = max(0, (agent.memoria.meu_hp_anterior or 0) - hp_atual_meu)
-            recompensa = dano_causado - dano_sofrido
+            if agent.memoria.estado_especifico_anterior != estado_especifico:
+                print("🔄 Novo inimigo detectado. Limpando ação pendente sem gravar.")
+                agent.memoria.acao_anterior = None
+            else:
+                dano_causado = max(
+                    0, (agent.memoria.inimigo_hp_anterior or 0) - hp_atual_inimigo
+                )
+                dano_sofrido = max(
+                    0, (agent.memoria.meu_hp_anterior or 0) - hp_atual_meu
+                )
+                recompensa = dano_causado - dano_sofrido
 
-            agent.atualizar_q(
-                agent.memoria.estado_especifico_anterior,  # type: ignore
-                agent.memoria.estado_geral_anterior,  # type: ignore
-                agent.memoria.acao_anterior,
-                recompensa,
-            )
+                agent.atualizar_q(
+                    agent.memoria.estado_especifico_anterior,  # type: ignore
+                    agent.memoria.estado_geral_anterior,  # type: ignore
+                    agent.memoria.acao_anterior,
+                    recompensa,
+                )
 
         agent.memoria.meu_hp_anterior = hp_atual_meu
         agent.memoria.inimigo_hp_anterior = hp_atual_inimigo
