@@ -11,6 +11,7 @@ from handlers.loot import handle_loot
 from handlers.party import handle_party, handle_target_select
 from handlers.summary import handle_summary
 from handlers.menu_option import handle_menu_option
+from handlers.confirm import handle_confirm
 
 HandlerFn = Callable[[dict, Agent], Optional[dict]]
 
@@ -19,6 +20,7 @@ _ROTAS: dict[str, HandlerFn] = {
     "STARTER_SELECT": handle_starter_select,
     "FIGHT": handle_fight,
     "COMMAND": handle_command,
+    "CONFIRM": handle_confirm,
     "TARGET_SELECT": handle_target_select,
     "MODIFIER_SELECT": handle_loot,
     "PARTY": handle_party,
