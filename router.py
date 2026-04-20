@@ -1,4 +1,5 @@
 """Roteador de telas: mapeia nome_tela para o handler correspondente."""
+
 from typing import Callable, Optional
 from agent import Agent
 from handlers.simples import handle_confirmar, TELAS_CONFIRMAR
@@ -8,6 +9,8 @@ from handlers.fight import handle_fight
 from handlers.command import handle_command
 from handlers.loot import handle_loot
 from handlers.party import handle_party, handle_target_select
+from handlers.summary import handle_summary
+from handlers.menu_option import handle_menu_option
 
 HandlerFn = Callable[[dict, Agent], Optional[dict]]
 
@@ -19,6 +22,9 @@ _ROTAS: dict[str, HandlerFn] = {
     "TARGET_SELECT": handle_target_select,
     "MODIFIER_SELECT": handle_loot,
     "PARTY": handle_party,
+    "SUMMARY": handle_summary,
+    "OPTION_SELECT": handle_menu_option,
+    "MENU_OPTION_SELECT": handle_menu_option,
 }
 
 # Registra todas as telas de confirmação simples no mesmo handler
