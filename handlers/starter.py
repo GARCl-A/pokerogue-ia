@@ -20,7 +20,7 @@ def handle_starter_select(dados: dict, agent) -> dict:
     # Se já selecionamos o Bulbassauro (custo > 0) e o vizinho,
     # e o jogo permite começar, iniciamos a run.
     # Nota: Usamos custo_time > 3 porque o Bulba custa 3, então com o vizinho será maior.
-    if pode_comecar and custo_time > 3:
+    if pode_comecar and custo_time > 8:
         print("🚀 Time pronto (Bulbassauro + Reforço). Iniciando run!")
         return acao(Tecla.ESC.value)
 
@@ -39,7 +39,21 @@ def handle_starter_select(dados: dict, agent) -> dict:
         print("➡️ Bulbassauro garantido. Movendo para o Pokémon à direita...")
         return acao(Tecla.DIREITA.value)
 
+    if custo_time == 3:
+        if pokemon == "Charmander":
+            print("🌿 Charmander encontrado! Selecionando...")
+            return acao(Tecla.ESPACO.value)
+        else:
+            print("🔍 Navegando até encontrar o Charmander...")
+            return acao(Tecla.DIREITA.value)
+
+    # FASE 2: Bulbassauro já selecionado (custo > 0).
+    # Se ainda estivermos em cima dele, precisamos mover para a direita.
+    if pokemon == "Charmander":
+        print("➡️ Charmander garantido. Movendo para o Pokémon à direita...")
+        return acao(Tecla.DIREITA.value)
+
     # FASE 3: Estamos em cima de qualquer outro Pokémon à direita do Bulbassauro.
     # Vamos selecioná-lo para fechar a dupla inicial.
-    print(f"➕ Selecionando {pokemon} para ajudar nas batalhas de dupla!")
+    print(f"➕ Selecionando {pokemon} para fechar o time!")
     return acao(Tecla.ESPACO.value)

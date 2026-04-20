@@ -11,9 +11,21 @@ def handle_party(dados: dict, agent) -> dict:
     cursor_atual = dados.get("cursor", 0)
     mensagem = dados.get("mensagem", "").lower()
 
-    # Contextos de uso de item ou ensino de golpe
+    # Identifica o contexto da ação
+    is_tm = "ensina" in mensagem or "teach" in mensagem
+    is_revive = "reanima" in mensagem or "revive" in mensagem
     is_usando_item = any(
-        t in mensagem for t in ["escolha", "ensina", "aumenta", "reanima", "restaura"]
+        t in mensagem
+        for t in [
+            "escolha",
+            "ensina",
+            "aumenta",
+            "reanima",
+            "restaura",
+            "choose",
+            "teach",
+            "cura",
+        ]
     )
 
     if not time:
@@ -21,31 +33,68 @@ def handle_party(dados: dict, agent) -> dict:
 
     # 1. CÉREBRO: Decide o alvo
     if agent.memoria.ataque_alvo_indice is None:
-        # --- CORREÇÃO DA TRAVA DE SEGURANÇA ---
-        # O líder (Slot 0) é quem define se a tela de troca forçada é legítima
-        lead_vivo = time[0].get("hp", 0) > 0
 
+        # Trava de Segurança para não fechar a tela de item achando que é troca de batalha
+        lead_vivo = time[0].get("hp", 0) > 0
         if not is_usando_item and lead_vivo:
             print(
                 f"🚫 Líder ({time[0]['nome']}) está vivo e não há contexto de item. Saindo..."
             )
             return acao(Tecla.X.value)
-        # ---------------------------------------
 
         alvo = None
-        # Se chegamos aqui, ou o líder morreu ou estamos usando um item.
-        # Procuramos o primeiro Pokémon com vida para entrar em campo ou receber o item.
-        for i, p in enumerate(time):
-            if p.get("hp", 0) > 0:
-                # Se for item e já tentamos o primeiro (e falhou), tentamos o próximo
-                if is_usando_item and "não pode aprender" in mensagem:
-                    if i <= cursor_atual:
-                        continue
 
+        for i, p in enumerate(time):
+            hp = p.get("hp", 0)
+            aptidao = p.get("aptidao", "").lower()  # <--- Lendo a UI do jogo!
+
+            # CASO 1: Ensinando um TM
+            if is_tm:
+                # Se na tela estiver escrito que ele não pode ou já aprendeu, ignora.
+                # Adapte as palavras de acordo com a linguagem que você joga (Inglês ou PT)
+                if any(
+                    erro in aptidao
+                    for erro in [
+                        "incapaz",
+                        "não pode",
+                        "not able",
+                        "aprendido",
+                        "learned",
+                    ]
+                ):
+                    print(
+                        f"⏭️ {p['nome']} ignorado (Incompatível ou já sabe o golpe: '{aptidao}')"
+                    )
+                    continue
+
+                # Se for Capaz, é ele mesmo!
                 alvo = i
                 break
 
-        agent.memoria.ataque_alvo_indice = alvo if alvo is not None else 0
+            # CASO 2: Usando item de Reviver (Precisa estar morto)
+            elif is_revive:
+                if hp == 0:
+                    alvo = i
+                    break
+
+            # CASO 3: Troca em batalha ou Cura (Precisa estar vivo)
+            else:
+                if hp > 0:
+                    # Se for poção e o jogo disser que não tem efeito (vida cheia)
+                    if is_usando_item and any(
+                        erro in aptidao for erro in ["efeito", "effect"]
+                    ):
+                        continue
+
+                    alvo = i
+                    break
+
+        # Se ninguém for alvo válido (ex: pegou um TM de Água e só tem Pokémon de Fogo)
+        if alvo is None:
+            print("⚠️ Nenhum Pokémon no time pode receber essa ação. Cancelando (X)...")
+            return acao(Tecla.X.value)
+
+        agent.memoria.ataque_alvo_indice = alvo
 
     # 2. MÃOS: Navega e confirma
     alvo_indice = agent.memoria.ataque_alvo_indice
