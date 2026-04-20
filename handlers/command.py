@@ -5,6 +5,15 @@ from agent import Agent
 from utils import acao
 
 Tecla = importlib.import_module("teclas").Tecla
+PokemonTypes = importlib.import_module("tipos_pokemon").PokemonTypes
+
+
+def _nome_tipo(id_tipo: int) -> str:
+    """Tenta converter o ID no Enum. Se o jogo mandar um número maluco, retorna o número."""
+    try:
+        return str(PokemonTypes(id_tipo))
+    except ValueError:
+        return f"Tipo_{id_tipo}"
 
 
 def _formatar_time(time: list[dict]) -> str:
@@ -24,10 +33,19 @@ def handle_command(dados: dict, agent: Agent) -> dict:
         # 1. Memória Fotográfica (O original)
         estado_especifico = f"{meu_poke['nome']}_vs_{inimigo['nome']}"
 
-        # 2. Instinto focado no Inimigo (A nova abstração)
-        tipo1 = inimigo.get("tipo1", 0)
-        tipo2 = inimigo.get("tipo2", 0)
-        estado_geral = f"InimigoT_{tipo1}-{tipo2}"
+        # 2. Instinto focado no Inimigo (Usando a sua classe PokemonTypes)
+        id_tipo1 = inimigo.get("tipo1", -1)
+        id_tipo2 = inimigo.get(
+            "tipo2", id_tipo1
+        )  # Fallback para o tipo 1 se não tiver tipo 2
+
+        nome_t1 = _nome_tipo(id_tipo1)
+        nome_t2 = _nome_tipo(id_tipo2)
+
+        if nome_t1 == nome_t2:
+            estado_geral = f"Inimigo_{nome_t1}"
+        else:
+            estado_geral = f"Inimigo_{nome_t1}-{nome_t2}"
 
         agent.memoria.estado_especifico_atual = estado_especifico
         agent.memoria.estado_geral_atual = estado_geral

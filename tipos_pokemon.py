@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class PokemonTypes(Enum):
+    ERROR = -2
     UNKNOWN = -1
     NORMAL = 0
     FIGHTING = 1
