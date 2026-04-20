@@ -1,4 +1,5 @@
 """Handler para a tela de comando de batalha (COMMAND): atualiza a Q-Table com a recompensa."""
+
 import importlib
 from agent import Agent
 from utils import acao
@@ -11,7 +12,6 @@ def _formatar_time(time: list[dict]) -> str:
 
 
 def handle_command(dados: dict, agent: Agent) -> dict:
-    """Calcula a recompensa do turno anterior, atualiza a Q-Table e avança para FIGHT."""
     meu_time = dados.get("meuTime", [])
     inimigos = dados.get("inimigos", [])
 
@@ -21,16 +21,27 @@ def handle_command(dados: dict, agent: Agent) -> dict:
         hp_atual_meu = meu_poke["hp"]
         hp_atual_inimigo = inimigo["hp"]
 
-        estado_atual = f"{meu_poke['nome']}_vs_{inimigo['nome']}"
-        agent.memoria.estado_atual = estado_atual
+        # 1. Memória Fotográfica (O original)
+        estado_especifico = f"{meu_poke['nome']}_vs_{inimigo['nome']}"
 
-        # Calcula recompensa e atualiza Q-Table se houver ação anterior registrada
+        # 2. Instinto focado no Inimigo (A nova abstração)
+        tipo1 = inimigo.get("tipo1", 0)
+        tipo2 = inimigo.get("tipo2", 0)
+        estado_geral = f"InimigoT_{tipo1}-{tipo2}"
+
+        agent.memoria.estado_especifico_atual = estado_especifico
+        agent.memoria.estado_geral_atual = estado_geral
+
         if agent.memoria.acao_anterior is not None:
-            dano_causado = max(0, (agent.memoria.inimigo_hp_anterior or 0) - hp_atual_inimigo)
+            dano_causado = max(
+                0, (agent.memoria.inimigo_hp_anterior or 0) - hp_atual_inimigo
+            )
             dano_sofrido = max(0, (agent.memoria.meu_hp_anterior or 0) - hp_atual_meu)
             recompensa = dano_causado - dano_sofrido
+
             agent.atualizar_q(
-                agent.memoria.estado_anterior,  # type: ignore[arg-type]
+                agent.memoria.estado_especifico_anterior,  # type: ignore
+                agent.memoria.estado_geral_anterior,  # type: ignore
                 agent.memoria.acao_anterior,
                 recompensa,
             )
@@ -38,6 +49,8 @@ def handle_command(dados: dict, agent: Agent) -> dict:
         agent.memoria.meu_hp_anterior = hp_atual_meu
         agent.memoria.inimigo_hp_anterior = hp_atual_inimigo
 
-        print(f"⚔️ BATALHA! [{_formatar_time(meu_time)}] VS [{_formatar_time(inimigos)}]")
+        print(
+            f"⚔️ BATALHA! [{_formatar_time(meu_time)}] VS [{_formatar_time(inimigos)}]"
+        )
 
     return acao(Tecla.ESPACO.value)
